@@ -1,0 +1,74 @@
+---
+- name: Verificar o status dos serviços
+  hosts: 20.42.99.5
+  tasks:
+    - name: Checar se o ufw está instalado e ativo
+      become: true
+      command: ufw status
+      register: ufw_status
+      ignore_errors: true
+
+    - debug:
+        msg: "ufw está instalado e ativo" 
+      when: 
+        - ufw_status.rc == 0
+        - "'Status: active' in ufw_status.stdout"
+
+    - debug:
+        msg: "ufw está instalado mas inativo ou não configurado"
+      when:
+        - ufw_status.rc == 0
+        - "'Status: inactive' in ufw_status.stdout"
+
+    - debug:
+        msg: "ufw não está instalado"
+      when:
+        - ufw_status.rc != 0
+
+    - name: Checar o status do zabbix-server
+      become: true
+      systemd:
+        name: zabbix-server
+        state: started
+      register: zabbix_status
+      ignore_errors: true
+
+    - debug:
+        msg: "zabbix-server está em execução"
+      when: zabbix_status.changed
+
+    - debug:
+        msg: "zabbix-server não está em execução"
+      when: zabbix_status.failed
+
+    - name: Checar o status do MySQL
+      become: true
+      systemd:
+        name: mysql
+        state: started
+      register: mysql_status
+      ignore_errors: true
+
+    - debug:
+        msg: "MySQL está em execução"
+      when: mysql_status.changed
+
+    - debug:
+        msg: "MySQL não está em execução"
+      when: mysql_status.failed
+
+    - name: Checar o status do Apache (httpd)
+      become: true
+      systemd:
+        name: httpd
+        state: started
+      register: httpd_status
+      ignore_errors: true
+
+    - debug:
+        msg: "Apache (httpd) está em execução"
+      when: httpd_status.changed
+
+    - debug:
+        msg: "Apache (httpd) não está em execução"
+      when: httpd_status.failed
