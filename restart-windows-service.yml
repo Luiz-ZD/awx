@@ -27,5 +27,4 @@
            Trigger: {{ status_trigger_zabbix }}
            Status Antes: {{ status_antes.state }}
            Status Depois: {{ status_depois.state }}
-           Restart Executado: {{ 'SIM' if status_trigger_zabbix == 'PROBLEM' else 'NÃO' }}
            Timestamp: {{ ansible_date_time.iso8601 }}
