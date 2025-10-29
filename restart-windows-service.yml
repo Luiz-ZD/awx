@@ -1,35 +1,39 @@
 ---
-- name: Reiniciar Serviço Windows - Versão Simples
+- name: Reiniciar Serviço Windows (AWX Adaptado)
   hosts: "{{ host_alvo }}"
   gather_facts: no
 
+  vars:
+    log_dir: "/var/lib/awx/projects/_8__playbooks_git/logs-servicos"
+
   tasks:
-    - name: Criar diretório de logs
-      file:
-        path: "/home/azureuser/zabbix-self/logs-servicos"
+
+    - name: Garantir diretório de logs no controlador AWX
+      ansible.builtin.file:
+        path: "{{ log_dir }}"
         state: directory
         mode: '0755'
       delegate_to: localhost
 
     - name: Coletar status ANTES do serviço
-      win_service:
+      ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
       register: status_antes
 
-    - name: Reiniciar serviço 
+    - name: Reiniciar serviço (quando status é PROBLEM)
       when: status_trigger_zabbix == "PROBLEM"
-      win_service:
+      ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
         state: restarted
 
     - name: Coletar status DEPOIS do serviço
-      win_service:
+      ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
       register: status_depois
 
-    - name: Criar log simples
+    - name: Criar log simples no controlador (AWX)
       delegate_to: localhost
-      copy:
+      ansible.builtin.copy:
         content: |
           Serviço: {{ servico_zabbix }}
           Host: {{ host_alvo }}
@@ -37,9 +41,9 @@
           Status Antes: {{ status_antes.state }}
           Status Depois: {{ status_depois.state }}
           Restart Executado: {{ 'SIM' if status_trigger_zabbix == 'PROBLEM' else 'NÃO' }}
-          Timestamp: $(date)
-        dest: "/home/azureuser/zabbix-self/logs-servicos/{{ host_alvo }}_$(date +%s).log"
+          Timestamp: {{ ansible_date_time.iso8601 }}
+        dest: "{{ log_dir }}/{{ host_alvo }}_{{ ansible_date_time.epoch }}.log"
 
-    - name: Mostrar resultado
-      debug:
+    - name: Mostrar resultado final
+      ansible.builtin.debug:
         msg: "Concluído: {{ servico_zabbix }} no {{ host_alvo }} - Antes: {{ status_antes.state }}, Depois: {{ status_depois.state }}"
