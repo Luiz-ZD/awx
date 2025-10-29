@@ -1,30 +1,35 @@
 ---
-- name: Reiniciar Serviço Windows (AWX — somente log em tela)
+- name: Reiniciar Serviço Windows (AWX - versão profissional)
   hosts: "{{ host_alvo }}"
-  gather_facts: yes
+  gather_facts: no
 
   tasks:
-    - name: Coletar status ANTES do serviço
+    - name: Coletar status atual do serviço
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
-      register: status_antes
+      register: status_atual
 
-    - name: Reiniciar serviço se trigger for PROBLEM
+    - name: Exibir status atual
+      ansible.builtin.debug:
+        msg: "Status atual do serviço {{ servico_zabbix }} em {{ inventory_hostname }}: {{ status_atual.state }}"
+
+    - name: Reiniciar serviço se estiver parado
+      when: status_atual.state != 'running'
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
         state: restarted
 
-    - name: Coletar status DEPOIS do serviço
+    - name: Coletar status após o restart
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
-      register: status_depois
+      register: status_final
 
-    - name: Exibir resumo direto no log do AWX
+    - name: Exibir resumo no log do AWX
       ansible.builtin.debug:
         msg: |
-           Serviço: {{ servico_zabbix }}
-           Host: {{ host_alvo }}
-           Trigger: {{ status_trigger_zabbix }}
-           Status Antes: {{ status_antes.state }}
-           Status Depois: {{ status_depois.state }}
-           Timestamp: {{ ansible_date_time.iso8601 }}
+          Serviço: {{ servico_zabbix }}
+          Host: {{ inventory_hostname }}
+          Status Antes: {{ status_atual.state }}
+          Status Depois: {{ status_final.state }}
+          Timestamp: {{ lookup('pipe', 'date +%Y-%m-%dT%H:%M:%S') }}
+          Resultado: {{ 'Restart executado com sucesso' if status_atual.state != 'running' else 'Serviço já estava em execução, nenhuma ação necessária' }}
