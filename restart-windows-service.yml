@@ -1,23 +1,15 @@
 ---
-- name: Reiniciar Serviço Windows (AWX Adaptado)
+- name: Reiniciar Serviço Windows (AWX — somente log em tela)
   hosts: "{{ host_alvo }}"
   gather_facts: no
 
   tasks:
-
-    - name: Garantir diretório de logs no controlador AWX
-      ansible.builtin.file:
-        path: "{{ log_dir }}"
-        state: directory
-        mode: '0755'
-      delegate_to: localhost
-
     - name: Coletar status ANTES do serviço
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
       register: status_antes
 
-    - name: Reiniciar serviço (quando status é PROBLEM)
+    - name: Reiniciar serviço se trigger for PROBLEM
       when: status_trigger_zabbix == "PROBLEM"
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
@@ -28,19 +20,13 @@
         name: "{{ servico_zabbix }}"
       register: status_depois
 
-    - name: Criar log simples no controlador (AWX)
-      delegate_to: localhost
-      ansible.builtin.copy:
-        content: |
-          Serviço: {{ servico_zabbix }}
-          Host: {{ host_alvo }}
-          Trigger: {{ status_trigger_zabbix }}
-          Status Antes: {{ status_antes.state }}
-          Status Depois: {{ status_depois.state }}
-          Restart Executado: {{ 'SIM' if status_trigger_zabbix == 'PROBLEM' else 'NÃO' }}
-          Timestamp: {{ ansible_date_time.iso8601 }}
-        dest: "{{ log_dir }}/{{ host_alvo }}_{{ ansible_date_time.epoch }}.log"
-
-    - name: Mostrar resultado final
+    - name: Exibir resumo direto no log do AWX
       ansible.builtin.debug:
-        msg: "Concluído: {{ servico_zabbix }} no {{ host_alvo }} - Antes: {{ status_antes.state }}, Depois: {{ status_depois.state }}"
+        msg: |
+           Serviço: {{ servico_zabbix }}
+           Host: {{ host_alvo }}
+           Trigger: {{ status_trigger_zabbix }}
+           Status Antes: {{ status_antes.state }}
+           Status Depois: {{ status_depois.state }}
+           Restart Executado: {{ 'SIM' if status_trigger_zabbix == 'PROBLEM' else 'NÃO' }}
+           Timestamp: {{ ansible_date_time.iso8601 }}
