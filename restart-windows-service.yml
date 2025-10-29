@@ -10,7 +10,6 @@
       register: status_antes
 
     - name: Reiniciar serviço se trigger for PROBLEM
-      when: status_trigger_zabbix == "PROBLEM"
       ansible.windows.win_service:
         name: "{{ servico_zabbix }}"
         state: restarted
