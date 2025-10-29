@@ -1,7 +1,7 @@
 ---
 - name: Reiniciar Serviço Windows (AWX — somente log em tela)
   hosts: "{{ host_alvo }}"
-  gather_facts: no
+  gather_facts: yes
 
   tasks:
     - name: Coletar status ANTES do serviço
