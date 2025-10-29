@@ -3,9 +3,6 @@
   hosts: "{{ host_alvo }}"
   gather_facts: no
 
-  vars:
-    log_dir: "/var/lib/awx/projects/_8__playbooks_git/logs-servicos"
-
   tasks:
 
     - name: Garantir diretório de logs no controlador AWX
