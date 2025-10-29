@@ -1,5 +1,5 @@
 ---
-- name: Reiniciar Serviço Windows (AWX - versão profissional)
+- name: Reiniciar Serviço Windows 
   hosts: "{{ host_alvo }}"
   gather_facts: no
 
