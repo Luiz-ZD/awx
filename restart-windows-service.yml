@@ -1,0 +1,45 @@
+---
+- name: Reiniciar Serviço Windows - Versão Simples
+  hosts: "{{ host_alvo }}"
+  gather_facts: no
+
+  tasks:
+    - name: Criar diretório de logs
+      file:
+        path: "/home/azureuser/zabbix-self/logs-servicos"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+
+    - name: Coletar status ANTES do serviço
+      win_service:
+        name: "{{ servico_zabbix }}"
+      register: status_antes
+
+    - name: Reiniciar serviço 
+      when: status_trigger_zabbix == "PROBLEM"
+      win_service:
+        name: "{{ servico_zabbix }}"
+        state: restarted
+
+    - name: Coletar status DEPOIS do serviço
+      win_service:
+        name: "{{ servico_zabbix }}"
+      register: status_depois
+
+    - name: Criar log simples
+      delegate_to: localhost
+      copy:
+        content: |
+          Serviço: {{ servico_zabbix }}
+          Host: {{ host_alvo }}
+          Trigger: {{ status_trigger_zabbix }}
+          Status Antes: {{ status_antes.state }}
+          Status Depois: {{ status_depois.state }}
+          Restart Executado: {{ 'SIM' if status_trigger_zabbix == 'PROBLEM' else 'NÃO' }}
+          Timestamp: $(date)
+        dest: "/home/azureuser/zabbix-self/logs-servicos/{{ host_alvo }}_$(date +%s).log"
+
+    - name: Mostrar resultado
+      debug:
+        msg: "Concluído: {{ servico_zabbix }} no {{ host_alvo }} - Antes: {{ status_antes.state }}, Depois: {{ status_depois.state }}"
